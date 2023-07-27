@@ -4,6 +4,7 @@ find_package(SDL2_image REQUIRED)
 add_executable(
   software_rasterizer
   main.cpp
+  rasterizer.cpp
 )
 set_property(TARGET software_rasterizer PROPERTY CXX_STANDARD 20)
 target_link_libraries(
