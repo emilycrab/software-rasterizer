@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
     SDL_assert(renderer != nullptr);
 
     auto crate_img = std::unique_ptr<SDL_Surface, decltype(&SDL_FreeSurface)>(
-        IMG_Load(R"(.\assets\wood_crate.jpg)"),
+        IMG_Load(R"(./assets/wood_crate.jpg)"),
         SDL_FreeSurface
     );
     SDL_assert(crate_img != nullptr);
