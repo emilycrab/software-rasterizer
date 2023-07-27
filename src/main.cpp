@@ -3,10 +3,11 @@
 #include <memory>
 #include <numeric>
 #include <optional>
+#include <vector>
 
 #define SDL_MAIN_HANDLED
 #include "SDL2/SDL.h"
-#include <vector>
+#include "SDL_image.h"
 
 constexpr int WINDOW_WIDTH = 640;
 constexpr int WINDOW_HEIGHT = 480;
@@ -18,6 +19,11 @@ struct Vec3
     [[nodiscard]] float distance(Vec3 other) const
     {
         return std::sqrt(std::pow(x - other.x, 2.0f) + std::pow(y - other.y, 2.0f));
+    }
+
+    friend Vec3 operator*(const Vec3 &v, const Vec3 &w)
+    {
+        return {v.x * w.x, v.y * w.y, v.z * w.z};
     }
 
     friend Vec3 operator*(float a, const Vec3 &v)
@@ -40,6 +46,7 @@ struct Vertex
 {
     Vec3 position;
     Vec3 color;
+    Vec3 uv;
 };
 
 float edge_func(Vec3 point, Vec3 v0, Vec3 v1)
@@ -58,7 +65,7 @@ struct Triangle
                edge_func(point, vertices[1].position, vertices[0].position) > 0;
     }
 
-    [[nodiscard]] Vec3 get_color(Vec3 point) const
+    [[nodiscard]] Vertex interpolate(Vec3 point) const
     {
         std::array<float, 3> subtriangle_areas{
             0.5f * edge_func(point, vertices[1].position, vertices[2].position),
@@ -75,23 +82,42 @@ struct Triangle
         Vec3 color = (l0 * vertices[0].color + l1 * vertices[1].color + l2 * vertices[2].color) /
                      (l0 + l1 + l2);
 
-        return color;
+        Vec3 uv =
+            (l0 * vertices[0].uv + l1 * vertices[1].uv + l2 * vertices[2].uv) / (l0 + l1 + l2);
+
+        return Vertex{point, color, uv};
     }
 };
 
-void do_draw(SDL_Texture *texture)
+void do_draw(SDL_Texture *target, SDL_Surface *crate)
 {
+    float x = 100.0f;
+    float y = 100.0f;
+    float s = 300.0f;
     static Triangle triangle{
-        Vertex{Vec3{WINDOW_WIDTH / 4.0f, WINDOW_HEIGHT - 50.0f, 0.0f}, Vec3{1.0f, 0.0f, 0.0f}},
-        Vertex{Vec3{WINDOW_WIDTH / 2.0f, 50.0f, 0.0f}, Vec3{0.0f, 1.0f, 0.0f}},
+        // top-left
         Vertex{
-            Vec3{WINDOW_WIDTH * 3.0f / 4.0f, WINDOW_HEIGHT - 50.0f, 0.0f},
-            Vec3{0.0f, 0.0, 1.0f}},
+            Vec3{x, y, 0.0f},
+            Vec3{0.0f, 1.0f, 1.0f},
+            Vec3{0.0f, 1.0f, 0.0f},
+        },
+        // bottom-right
+        Vertex{
+            Vec3{x + s, y + s, 0.0f},
+            Vec3{1.0f, 0.0, 1.0f},
+            Vec3{1.0f, 0.0f, 0.0f},
+        },
+        // bottom-left
+        Vertex{
+            Vec3{x, y + s, 0.0f},
+            Vec3{1.0f, 1.0f, 0.0f},
+            Vec3{0.0f, 0.0f, 0.0f},
+        },
     };
 
     void *data;
     int pitch;
-    SDL_assert(SDL_LockTexture(texture, nullptr, &data, &pitch) == 0);
+    SDL_assert(SDL_LockTexture(target, nullptr, &data, &pitch) == 0);
 
     auto *image_data = static_cast<std::uint8_t *>(data);
     auto channels = pitch / WINDOW_WIDTH;
@@ -102,11 +128,20 @@ void do_draw(SDL_Texture *texture)
         {
             auto pixel = Vec3{static_cast<float>(i), static_cast<float>(j), 0.0f};
             auto is_inside = triangle.is_inside(pixel);
+            auto interpolated = triangle.interpolate(pixel);
 
             auto color = [&]() -> Vec3 {
                 if (is_inside)
                 {
-                    return triangle.get_color(pixel);
+                    int crate_x = interpolated.uv.x * crate->w;
+                    int crate_y = interpolated.uv.y * crate->h;
+                    int idx = crate_y * crate->pitch + crate_x * crate->format->BytesPerPixel;
+                    auto *pixels = static_cast<std::uint8_t*>(crate->pixels);
+                    return interpolated.color * Vec3{
+                        pixels[idx + 0] / 255.0f,
+                        pixels[idx + 1] / 255.0f,
+                        pixels[idx + 2] / 255.0f,
+                    };
                 }
                 else
                 {
@@ -120,7 +155,7 @@ void do_draw(SDL_Texture *texture)
         }
     }
 
-    SDL_UnlockTexture(texture);
+    SDL_UnlockTexture(target);
 }
 
 int main(int argc, char *argv[])
@@ -151,7 +186,10 @@ int main(int argc, char *argv[])
     );
     SDL_assert(renderer != nullptr);
 
-    auto texture = std::unique_ptr<SDL_Texture, decltype(&SDL_DestroyTexture)>(
+    auto crate_img = std::unique_ptr<SDL_Surface, decltype(&SDL_FreeSurface)>(IMG_Load(R"(.\assets\wood_crate.jpg)"), SDL_FreeSurface);
+    SDL_assert(crate_img != nullptr);
+
+    auto target = std::unique_ptr<SDL_Texture, decltype(&SDL_DestroyTexture)>(
         SDL_CreateTexture(
             renderer.get(),
             SDL_PIXELFORMAT_ABGR8888,
@@ -161,12 +199,12 @@ int main(int argc, char *argv[])
         ),
         SDL_DestroyTexture
     );
-    SDL_assert(texture != nullptr);
+    SDL_assert(target != nullptr);
 
-    do_draw(texture.get());
+    do_draw(target.get(), crate_img.get());
     SDL_Log("Done Drawing!");
 
-    SDL_RenderCopy(renderer.get(), texture.get(), nullptr, nullptr);
+    SDL_RenderCopy(renderer.get(), target.get(), nullptr, nullptr);
     SDL_RenderPresent(renderer.get());
 
     auto should_quit = false;
