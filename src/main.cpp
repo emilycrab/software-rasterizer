@@ -8,11 +8,12 @@
 #define SDL_MAIN_HANDLED
 #include "SDL2/SDL.h"
 #include "SDL_image.h"
+#include "glm/gtx/transform.hpp"
 
 #include "rasterizer.hpp"
 
-constexpr int WINDOW_WIDTH = 640;
-constexpr int WINDOW_HEIGHT = 480;
+constexpr int WINDOW_WIDTH = 320*2;
+constexpr int WINDOW_HEIGHT = 240*2;
 
 int main(int argc, char *argv[])
 {
@@ -48,63 +49,217 @@ int main(int argc, char *argv[])
     );
     SDL_assert(crate_img != nullptr);
 
-    float x = 100.0f;
-    float y = 100.0f;
-    float s = 300.0f;
-
-    std::array<Triangle, 2> triangles{
+    std::array cube{
         Triangle{
-            // top-left
             Vertex{
-                Vec3{x, y, 0.0f},
-                Vec3{0.0f, 1.0f, 1.0f},
-                Vec3{0.0f, 1.0f, 0.0f},
-            },
-            // bottom-right
-            Vertex{
-                Vec3{x + s, y + s, 0.0f},
-                Vec3{1.0f, 0.0, 1.0f},
-                Vec3{1.0f, 0.0f, 0.0f},
-            },
-            // bottom-left
-            Vertex{
-                Vec3{x, y + s, 0.0f},
-                Vec3{1.0f, 1.0f, 0.0f},
-                Vec3{0.0f, 0.0f, 0.0f},
-            },
-        },
-        Triangle{
-            // top-left
-            Vertex{
-                Vec3{x, y, 0.0f},
-                Vec3{0.0f, 1.0f, 1.0f},
-                Vec3{0.0f, 1.0f, 0.0f},
-            },
-            // top-right
-            Vertex{
-                Vec3{x + s, y, 0.0f},
+                Vec4{-0.5f, -0.5f, -0.5f, 1.0f},
                 Vec3{1.0f, 1.0f, 1.0f},
-                Vec3{1.0f, 1.0f, 0.0f},
+                Vec2{0.0f, 0.0f},
             },
-            // bottom-right
             Vertex{
-                Vec3{x + s, y + s, 0.0f},
-                Vec3{1.0f, 0.0, 1.0f},
-                Vec3{1.0f, 0.0f, 0.0f},
+                Vec4{0.5f, -0.5f, -0.5f, 1.0f},
+                Vec3{1.0f, 1.0f, 1.0f},
+                Vec2{1.0f, 0.0f},
+            },
+            Vertex{
+                Vec4{0.5f, 0.5f, -0.5f, 1.0f},
+                Vec3{1.0f, 1.0f, 1.0f},
+                Vec2{1.0f, 1.0f},
             },
         },
+        Triangle{
+            Vertex{
+                Vec4{0.5f, 0.5f, -0.5f, 1.0f},
+                Vec3{1.0f, 1.0f, 1.0f},
+                Vec2{1.0f, 1.0f},
+            },
+            Vertex{
+                Vec4{-0.5f, 0.5f, -0.5f, 1.0f},
+                Vec3{1.0f, 1.0f, 1.0f},
+                Vec2{0.0f, 1.0f},
+            },
+            Vertex{
+                Vec4{-0.5f, -0.5f, -0.5f, 1.0f},
+                Vec3{1.0f, 1.0f, 1.0f},
+                Vec2{0.0f, 0.0f},
+            },
+        },
+        Triangle{
+            Vertex{
+                Vec4{0.5f, 0.5f, 0.5f, 1.0f},
+                Vec3{1.0f, 1.0f, 1.0f},
+                Vec2{1.0f, 1.0f},
+            },
+            Vertex{
+                Vec4{0.5f, -0.5f, 0.5f, 1.0f},
+                Vec3{1.0f, 1.0f, 1.0f},
+                Vec2{1.0f, 0.0f},
+            },
+            Vertex{
+                Vec4{-0.5f, -0.5f, 0.5f, 1.0f},
+                Vec3{1.0f, 1.0f, 1.0f},
+                Vec2{0.0f, 0.0f},
+            },
+        },
+        Triangle{
+            Vertex{
+                Vec4{-0.5f, -0.5f, 0.5f, 1.0f},
+                Vec3{1.0f, 1.0f, 1.0f},
+                Vec2{0.0f, 0.0f},
+            },
+            Vertex{
+                Vec4{-0.5f, 0.5f, 0.5f, 1.0f},
+                Vec3{1.0f, 1.0f, 1.0f},
+                Vec2{0.0f, 1.0f},
+            },
+            Vertex{
+                Vec4{0.5f, 0.5f, 0.5f, 1.0f},
+                Vec3{1.0f, 1.0f, 1.0f},
+                Vec2{1.0f, 1.0f},
+            },
+        },
+        Triangle{
+            Vertex{
+                Vec4{-0.5f, -0.5f, -0.5f, 1.0f},
+                Vec3{1.0f, 1.0f, 1.0f},
+                Vec2{0.0f, 1.0f},
+            },
+            Vertex{
+                Vec4{-0.5f, 0.5f, -0.5f, 1.0f},
+                Vec3{1.0f, 1.0f, 1.0f},
+                Vec2{1.0f, 1.0f},
+            },
+            Vertex{
+                Vec4{-0.5f, 0.5f, 0.5f, 1.0f},
+                Vec3{1.0f, 1.0f, 1.0f},
+                Vec2{1.0f, 0.0f},
+            },
+        },
+        Triangle{
+            Vertex{
+                Vec4{-0.5f, 0.5f, 0.5f, 1.0f},
+                Vec3{1.0f, 1.0f, 1.0f},
+                Vec2{1.0f, 0.0f},
+            },
+            Vertex{
+                Vec4{-0.5f, -0.5f, 0.5f, 1.0f},
+                Vec3{1.0f, 1.0f, 1.0f},
+                Vec2{0.0f, 0.0f},
+            },
+            Vertex{
+                Vec4{-0.5f, -0.5f, -0.5f, 1.0f},
+                Vec3{1.0f, 1.0f, 1.0f},
+                Vec2{0.0f, 1.0f},
+            },
+        },
+        Triangle{
+            Vertex{
+                Vec4{0.5f, 0.5f, 0.5f, 1.0f},
+                Vec3{1.0f, 1.0f, 1.0f},
+                Vec2{1.0f, 0.0f},
+            },
+            Vertex{
+                Vec4{0.5f, 0.5f, -0.5f, 1.0f},
+                Vec3{1.0f, 1.0f, 1.0f},
+                Vec2{1.0f, 1.0f},
+            },
+            Vertex{
+                Vec4{0.5f, -0.5f, -0.5f, 1.0f},
+                Vec3{1.0f, 1.0f, 1.0f},
+                Vec2{0.0f, 1.0f},
+            },
+        },
+        Triangle{
+            Vertex{
+                Vec4{0.5f, -0.5f, -0.5f, 1.0f},
+                Vec3{1.0f, 1.0f, 1.0f},
+                Vec2{0.0f, 1.0f},
+            },
+            Vertex{
+                Vec4{0.5f, -0.5f, 0.5f, 1.0f},
+                Vec3{1.0f, 1.0f, 1.0f},
+                Vec2{0.0f, 0.0f},
+            },
+            Vertex{
+                Vec4{0.5f, 0.5f, 0.5f, 1.0f},
+                Vec3{1.0f, 1.0f, 1.0f},
+                Vec2{1.0f, 0.0f},
+            },
+        },
+        //Triangle{
+        //    Vertex{
+        //        Vec4{-0.5f, -0.5f, -0.5f, 1.0f},
+        //        Vec3{1.0f, 1.0f, 1.0f},
+        //        Vec2{0.0f, 1.0f},
+        //    },
+        //    Vertex{
+        //        Vec4{0.5f, -0.5f, -0.5f, 1.0f},
+        //        Vec3{1.0f, 1.0f, 1.0f},
+        //        Vec2{1.0f, 1.0f},
+        //    },
+        //    Vertex{
+        //        Vec4{0.5f, -0.5f, 0.5f, 1.0f},
+        //        Vec3{1.0f, 1.0f, 1.0f},
+        //        Vec2{1.0f, 0.0f},
+        //    },
+        //},
+        //Triangle{
+        //    Vertex{
+        //        Vec4{0.5f, -0.5f, 0.5f, 1.0f},
+        //        Vec3{1.0f, 1.0f, 1.0f},
+        //        Vec2{1.0f, 0.0f},
+        //    },
+        //    Vertex{
+        //        Vec4{-0.5f, -0.5f, 0.5f, 1.0f},
+        //        Vec3{1.0f, 1.0f, 1.0f},
+        //        Vec2{0.0f, 0.0f},
+        //    },
+        //    Vertex{
+        //        Vec4{-0.5f, -0.5f, -0.5f, 1.0f},
+        //        Vec3{1.0f, 1.0f, 1.0f},
+        //        Vec2{0.0f, 1.0f},
+        //    },
+        //},
+        //Triangle{
+        //    Vertex{
+        //        Vec4{-0.5f, 0.5f, -0.5f, 1.0f},
+        //        Vec3{1.0f, 1.0f, 1.0f},
+        //        Vec2{0.0f, 1.0f},
+        //    },
+        //    Vertex{
+        //        Vec4{0.5f, 0.5f, -0.5f, 1.0f},
+        //        Vec3{1.0f, 1.0f, 1.0f},
+        //        Vec2{1.0f, 1.0f},
+        //    },
+        //    Vertex{
+        //        Vec4{0.5f, 0.5f, 0.5f, 1.0f},
+        //        Vec3{1.0f, 1.0f, 1.0f},
+        //        Vec2{1.0f, 0.0f},
+        //    },
+        //},
+        //Triangle{
+        //    Vertex{
+        //        Vec4{0.5f, 0.5f, 0.5f, 1.0f},
+        //        Vec3{1.0f, 1.0f, 1.0f},
+        //        Vec2{1.0f, 0.0f},
+        //    },
+        //    Vertex{
+        //        Vec4{-0.5f, 0.5f, 0.5f, 1.0f},
+        //        Vec3{1.0f, 1.0f, 1.0f},
+        //        Vec2{0.0f, 0.0f},
+        //    },
+        //    Vertex{
+        //        Vec4{-0.5f, 0.5f, -0.5f, 1.0f},
+        //        Vec3{1.0f, 1.0f, 1.0f},
+        //        Vec2{0.0f, 1.0f},
+        //    },
+        //},
     };
+
 
     Rasterizer rasterizer(renderer.get(), WINDOW_WIDTH, WINDOW_HEIGHT);
 
-    rasterizer.BeginDraw();
-    rasterizer.ActivateTexture(crate_img.get());
-    rasterizer.DrawTriangleArray(triangles);
-    rasterizer.FinishDraw();
-    SDL_Log("Done Drawing!");
-
-    rasterizer.Render(renderer.get());
-    SDL_RenderPresent(renderer.get());
+    auto angle = 0.0f;
 
     auto should_quit = false;
     while (!should_quit)
@@ -118,7 +273,21 @@ int main(int argc, char *argv[])
                     should_quit = true;
                     break;
             }
+
         }
+
+        rasterizer.BeginDraw();
+        rasterizer.ActivateTexture(crate_img.get());
+        rasterizer.ActivateModel(
+            glm::scale(Vec3{0.5f}) * glm::rotate(angle, Vec3{0.0f, 1.0f, 0.0f})
+        );
+        rasterizer.DrawTriangleArray(cube);
+        rasterizer.FinishDraw();
+
+        rasterizer.Render(renderer.get());
+        SDL_RenderPresent(renderer.get());
+
+        angle += 0.01f;
     }
 
     SDL_Quit();

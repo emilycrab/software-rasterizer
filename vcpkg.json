@@ -3,6 +3,7 @@
     "builtin-baseline": "ebf90b95b170725379768b2de378d3af6f713bfd",
     "dependencies": [
         "sdl2",
-        "sdl2-image"
+        "sdl2-image",
+        "glm"
     ]
 }
